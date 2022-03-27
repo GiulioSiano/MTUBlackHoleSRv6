@@ -1,0 +1,208 @@
+#!/usr/bin/sudo bash
+
+sudo pkill vpp
+sudo ip netns del ns1
+sudo ip netns del ns2
+sudo ip link del E1C1_C1
+sudo ip link del C1C2_C2
+sudo ip link del C2E2_E2
+sudo ip link del E1C3_C3
+sudo ip link del C1C3_C3
+sudo ip link del C3C4_C4
+sudo ip link del C2C4_C4
+sudo ip link del C4E2_E2
+
+function pause(){
+   read -p "$*"	#le pause sono necessarie altrimenti vppctl non ha il tempo di connettersi alle istanze di vpp
+}
+
+sudo vpp unix {cli-listen /run/vpp/cli-vppE1.sock} api-segment { prefix vppE1 }
+pause 'E1 instance starts. Press enter.'
+sudo vpp unix {cli-listen /run/vpp/cli-vppC1.sock} api-segment { prefix vppC1 }
+pause 'C1 instance starts. Press enter.'
+sudo vpp unix {cli-listen /run/vpp/cli-vppC2.sock} api-segment { prefix vppC2 }
+pause 'C2 instance starts. Press enter.'
+sudo vpp unix {cli-listen /run/vpp/cli-vppE2.sock} api-segment { prefix vppE2 }
+pause 'E2 instance starts. Press enter.'
+sudo vpp unix {cli-listen /run/vpp/cli-vppC3.sock} api-segment { prefix vppC3 }
+pause 'C3 instance starts. Press enter.'
+sudo vpp unix {cli-listen /run/vpp/cli-vppC4.sock} api-segment { prefix vppC4 }
+pause 'C4 instance starts. Press enter.'
+
+#Impostazione di tutti i collegamenti
+#Collegamento E1C1
+ip link add name E1C1_E1 type veth peer name E1C1_C1
+vppctl -s /run/vpp/cli-vppE1.sock create host-interface name E1C1_E1
+vppctl -s /run/vpp/cli-vppC1.sock create host-interface name E1C1_C1
+
+vppctl -s /run/vpp/cli-vppE1.sock set int state host-E1C1_E1 up
+vppctl -s /run/vpp/cli-vppC1.sock set int state host-E1C1_C1 up
+vppctl -s /run/vpp/cli-vppE1.sock set int ip address host-E1C1_E1 fc00::1:0:1/112
+vppctl -s /run/vpp/cli-vppC1.sock set int ip address host-E1C1_C1 fc00::1:0:2/112
+#Collegamento C1C2
+ip link add name C1C2_C1 type veth peer name C1C2_C2
+vppctl -s /run/vpp/cli-vppC1.sock create host-interface name C1C2_C1
+vppctl -s /run/vpp/cli-vppC2.sock create host-interface name C1C2_C2
+
+vppctl -s /run/vpp/cli-vppC1.sock set int state host-C1C2_C1 up
+vppctl -s /run/vpp/cli-vppC2.sock set int state host-C1C2_C2 up
+vppctl -s /run/vpp/cli-vppC1.sock set int ip address host-C1C2_C1 fc00::2:0:1/112
+vppctl -s /run/vpp/cli-vppC2.sock set int ip address host-C1C2_C2 fc00::2:0:2/112
+#Collegamento C2E2
+ip link add name C2E2_C2 type veth peer name C2E2_E2
+vppctl -s /run/vpp/cli-vppC2.sock create host-interface name C2E2_C2
+vppctl -s /run/vpp/cli-vppE2.sock create host-interface name C2E2_E2
+
+vppctl -s /run/vpp/cli-vppC2.sock set int state host-C2E2_C2 up
+vppctl -s /run/vpp/cli-vppE2.sock set int state host-C2E2_E2 up
+vppctl -s /run/vpp/cli-vppC2.sock set int ip address host-C2E2_C2 fc00::3:0:1/112
+vppctl -s /run/vpp/cli-vppE2.sock set int ip address host-C2E2_E2 fc00::3:0:2/112
+#Collegamento E1C3
+ip link add name E1C3_E1 type veth peer name E1C3_C3
+vppctl -s /run/vpp/cli-vppE1.sock create host-interface name E1C3_E1
+vppctl -s /run/vpp/cli-vppC3.sock create host-interface name E1C3_C3
+
+vppctl -s /run/vpp/cli-vppE1.sock set int state host-E1C3_E1 up
+vppctl -s /run/vpp/cli-vppC3.sock set int state host-E1C3_C3 up
+vppctl -s /run/vpp/cli-vppE1.sock set int ip address host-E1C3_E1 fc00::6:0:1/112
+vppctl -s /run/vpp/cli-vppC3.sock set int ip address host-E1C3_C3 fc00::6:0:2/112
+#Collegamento C1C3
+ip link add name C1C3_C1 type veth peer name C1C3_C3
+vppctl -s /run/vpp/cli-vppC1.sock create host-interface name C1C3_C1
+vppctl -s /run/vpp/cli-vppC3.sock create host-interface name C1C3_C3
+
+vppctl -s /run/vpp/cli-vppC1.sock set int state host-C1C3_C1 up
+vppctl -s /run/vpp/cli-vppC3.sock set int state host-C1C3_C3 up
+vppctl -s /run/vpp/cli-vppC1.sock set int ip address host-C1C3_C1 fc00::7:0:1/112
+vppctl -s /run/vpp/cli-vppC3.sock set int ip address host-C1C3_C3 fc00::7:0:2/112
+#Collegamento C3C4
+ip link add name C3C4_C3 type veth peer name C3C4_C4
+vppctl -s /run/vpp/cli-vppC3.sock create host-interface name C3C4_C3
+vppctl -s /run/vpp/cli-vppC4.sock create host-interface name C3C4_C4
+
+vppctl -s /run/vpp/cli-vppC3.sock set int state host-C3C4_C3 up
+vppctl -s /run/vpp/cli-vppC4.sock set int state host-C3C4_C4 up
+vppctl -s /run/vpp/cli-vppC3.sock set int ip address host-C3C4_C3 fc00::5:0:2/112
+vppctl -s /run/vpp/cli-vppC4.sock set int ip address host-C3C4_C4 fc00::5:0:1/112
+#Collegamento C2C4
+ip link add name C2C4_C2 type veth peer name C2C4_C4
+vppctl -s /run/vpp/cli-vppC2.sock create host-interface name C2C4_C2
+vppctl -s /run/vpp/cli-vppC4.sock create host-interface name C2C4_C4
+
+vppctl -s /run/vpp/cli-vppC2.sock set int state host-C2C4_C2 up
+vppctl -s /run/vpp/cli-vppC4.sock set int state host-C2C4_C4 up
+vppctl -s /run/vpp/cli-vppC2.sock set int ip address host-C2C4_C2 fc00::8:0:1/112
+vppctl -s /run/vpp/cli-vppC4.sock set int ip address host-C2C4_C4 fc00::8:0:2/112
+#Collegamento C4E2
+ip link add name C4E2_C4 type veth peer name C4E2_E2
+vppctl -s /run/vpp/cli-vppC4.sock create host-interface name C4E2_C4
+vppctl -s /run/vpp/cli-vppE2.sock create host-interface name C4E2_E2
+
+vppctl -s /run/vpp/cli-vppC4.sock set int state host-C4E2_C4 up
+vppctl -s /run/vpp/cli-vppE2.sock set int state host-C4E2_E2 up
+vppctl -s /run/vpp/cli-vppC4.sock set int ip address host-C4E2_C4 fc00::4:0:1/112
+vppctl -s /run/vpp/cli-vppE2.sock set int ip address host-C4E2_E2 fc00::4:0:2/112
+
+
+#Routing Table
+#Link E1C1
+vppctl -s /run/vpp/cli-vppE1.sock ip route add fc00::1:0:2/112 via fc00::1:0:1
+vppctl -s /run/vpp/cli-vppC1.sock ip route add fc00::1:0:1/112 via fc00::1:0:2
+#vppctl -s /run/vpp/cli-vppC1.sock ip route add fc00::1:2/112 via fc00::1:0:1 #ping ns1-C1
+#Link C1C2
+vppctl -s /run/vpp/cli-vppC1.sock ip route add fc00::2:0:2/112 via fc00::2:0:1
+vppctl -s /run/vpp/cli-vppC2.sock ip route add fc00::2:0:1/112 via fc00::2:0:2
+#Link C2E2
+vppctl -s /run/vpp/cli-vppC2.sock ip route add fc00::3:0:2/112 via fc00::3:0:1
+vppctl -s /run/vpp/cli-vppE2.sock ip route add fc00::3:0:1/112 via fc00::3:0:2
+#Link E1C3
+vppctl -s /run/vpp/cli-vppE1.sock ip route add fc00::6:0:2/112 via fc00::6:0:1
+vppctl -s /run/vpp/cli-vppC3.sock ip route add fc00::6:0:1/112 via fc00::6:0:2
+#Link C1C3
+vppctl -s /run/vpp/cli-vppC1.sock ip route add fc00::7:0:2/112 via fc00::7:0:1
+vppctl -s /run/vpp/cli-vppC3.sock ip route add fc00::7:0:1/112 via fc00::7:0:2
+#Link C3C4
+vppctl -s /run/vpp/cli-vppC3.sock ip route add fc00::5:0:1/112 via fc00::5:0:2
+vppctl -s /run/vpp/cli-vppC4.sock ip route add fc00::5:0:2/112 via fc00::5:0:1
+#Link C2C4
+vppctl -s /run/vpp/cli-vppC2.sock ip route add fc00::8:0:2/112 via fc00::8:0:1
+vppctl -s /run/vpp/cli-vppC4.sock ip route add fc00::8:0:1/112 via fc00::8:0:2
+#Link C4E2
+vppctl -s /run/vpp/cli-vppC4.sock ip route add fc00::4:0:2/112 via fc00::4:0:1
+vppctl -s /run/vpp/cli-vppE2.sock ip route add fc00::4:0:1/112 via fc00::4:0:2
+
+
+#Setting BSID
+#E1
+sudo vppctl -s /run/vpp/cli-vppE1.sock create loopback interface instance 0
+sudo vppctl -s /run/vpp/cli-vppE1.sock set interface state loop0 up
+sudo vppctl -s /run/vpp/cli-vppE1.sock set interface ip address loop0 e1::/128
+#E2
+sudo vppctl -s /run/vpp/cli-vppE2.sock create loopback interface instance 0
+sudo vppctl -s /run/vpp/cli-vppE2.sock set interface state loop0 up
+sudo vppctl -s /run/vpp/cli-vppE2.sock set interface ip address loop0 e2::/128
+
+#HOSTS
+ip netns add ns1
+ip link add pc1 type veth peer name vethns1
+ip link set vethns1 netns ns1
+ip netns exec ns1 ip link set lo up
+ip netns exec ns1 ip link set vethns1 up
+ip link set pc1 up
+ip netns exec ns1 ip route flush table main 	#cancella la routing table preesistente
+ip netns exec ns1 ip addr flush dev vethns1	#cancella tutti gli indirizzi ip presenti
+ip netns exec ns1 ip addr add fc00::1:2/112 dev vethns1
+ip netns exec ns1 ip route add default via fc00::1:1
+
+ip netns add ns2
+ip link add pc2 type veth peer name vethns2
+ip link set vethns2 netns ns2
+ip netns exec ns2 ip link set lo up
+ip netns exec ns2 ip link set vethns2 up
+ip link set pc2 up
+ip netns exec ns2 ip route flush table main 	#cancella la routing table preesistente
+ip netns exec ns2 ip addr flush dev vethns2	#cancella tutti gli indirizzi ip presenti
+ip netns exec ns2 ip addr add fc00::2:2/112 dev vethns2
+ip netns exec ns2 ip route add default via fc00::2:1
+
+#LINK HOSTS TO VPP
+sudo vppctl -s /run/vpp/cli-vppE1.sock create host-interface name pc1
+sudo vppctl -s /run/vpp/cli-vppE1.sock set interface state host-pc1 up
+sudo vppctl -s /run/vpp/cli-vppE1.sock set interface ip address host-pc1 fc00::1:1/112
+
+sudo vppctl -s /run/vpp/cli-vppE2.sock create host-interface name pc2
+sudo vppctl -s /run/vpp/cli-vppE2.sock set interface state host-pc2 up
+sudo vppctl -s /run/vpp/cli-vppE2.sock set interface ip address host-pc2 fc00::2:1/112
+
+#BSID ROUTING TABLE
+#BEFORE CHANGING ROUTE
+sudo vppctl -s /run/vpp/cli-vppE1.sock ip route add c1::/128 via fc00::1:0:2
+pause 'E1 routing table configured. Press enter.'
+sudo vppctl -s /run/vpp/cli-vppC1.sock ip route add c2::/128 via fc00::2:0:2
+sudo vppctl -s /run/vpp/cli-vppC1.sock ip route add e1::9/128 via fc00::1:0:1
+pause 'C1 routing table configured. Press enter.'
+sudo vppctl -s /run/vpp/cli-vppC2.sock ip route add c1::/128 via fc00::2:0:1
+sudo vppctl -s /run/vpp/cli-vppC2.sock ip route add e2::9/128 via fc00::3:0:2
+pause 'C2 routing table configured. Press enter.'
+sudo vppctl -s /run/vpp/cli-vppE2.sock ip route add c2::/128 via fc00::3:0:1
+pause 'E2 routing table configured. Press enter.'
+
+#configuring srv6 
+sudo vppctl -s /run/vpp/cli-vppE1.sock set sr encaps source addr e1::
+sudo vppctl -s /run/vpp/cli-vppE1.sock sr policy add bsid a1:: next c1:: next c2:: next e2::9 encap
+sudo vppctl -s /run/vpp/cli-vppE1.sock sr steer l3 fc00::2:2/112 via bsid a1::
+sudo vppctl -s /run/vpp/cli-vppE1.sock sr localsid address e1::9 behavior end.dx6 host-pc1 fc00::1:2
+pause 'E1: SRV6 configured. Press enter.'
+
+sudo vppctl -s /run/vpp/cli-vppE2.sock set sr encaps source addr e2::
+sudo vppctl -s /run/vpp/cli-vppE2.sock sr policy add bsid a2:: next c2:: next c1:: next e1::9 encap
+sudo vppctl -s /run/vpp/cli-vppE2.sock sr steer l3 fc00::1:2/112 via bsid a2::
+sudo vppctl -s /run/vpp/cli-vppE2.sock sr localsid address e2::9 behavior end.dx6 host-pc2 fc00::2:2
+#pause 'E2: SRV6 configured. Press enter.'
+
+sudo vppctl -s /run/vpp/cli-vppC1.sock sr localsid address c1:: behavior end
+sudo vppctl -s /run/vpp/cli-vppC2.sock sr localsid address c2:: behavior end
+sudo vppctl -s /run/vpp/cli-vppC3.sock sr localsid address c3:: behavior end
+sudo vppctl -s /run/vpp/cli-vppC4.sock sr localsid address c4:: behavior end
+pause 'C1, C2: SRV6 configured. Press enter.'
+
